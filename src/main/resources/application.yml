@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://<server>:5432/orders_db
+    username: 
+    password: 
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 8080
