@@ -1,435 +1,187 @@
-# Order Service - REST API enfoque DDD
- 
-## 📌 Descripción
+# Order Service — Spring Boot + DDD
 
-
-
-`Order Service` es un servicio RESTful desarrollado con **Spring Boot**, siguiendo principios de **Domain-Driven Design (DDD)**.
-
-
-
-Permite gestionar órdenes mediante operaciones básicas:
-
-
-* Crear órdenes
-
-* Consultar órdenes
-
-* Consultar una orden por ID
-
-* Actualizar órdenes
-
-
----
-# Esquema de base de datos relacional
-
-## Mermaid diagrams
-```mermaid
-erDiagram
-
-    CUSTOMERS ||--o{ ORDERS : places
-    ORDERS ||--o{ ORDER_ITEMS : contains
-    PRODUCTS ||--o{ ORDER_ITEMS : included_in
-
-    CUSTOMERS {
-        BIGINT id PK
-        VARCHAR name
-        VARCHAR email
-    }
-
-    ORDERS {
-        BIGINT id PK
-        BIGINT customer_id FK
-        NUMERIC amount
-        VARCHAR status
-        TIMESTAMP created_at
-    }
-
-    ORDER_ITEMS {
-        BIGINT id PK
-        BIGINT order_id FK
-        BIGINT product_id FK
-        INT quantity
-        NUMERIC price
-    }
-
-    PRODUCTS {
-        BIGINT id PK
-        VARCHAR name
-        NUMERIC price
-        INT stock
-    }
-```
- 
- ## Database schema
-
-```
-CREATE TABLE customers (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL
-);
-
-CREATE TABLE products (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    price NUMERIC(10,2) NOT NULL,
-    stock INT NOT NULL
-);
-
-CREATE TABLE orders (
-    id BIGSERIAL PRIMARY KEY,
-    customer_id BIGINT REFERENCES customers(id),
-    amount NUMERIC(10,2),
-    status VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE order_items (
-    id BIGSERIAL PRIMARY KEY,
-    order_id BIGINT REFERENCES orders(id),
-    product_id BIGINT REFERENCES products(id),
-    quantity INT NOT NULL,
-    price NUMERIC(10,2) NOT NULL
-);
-```
-
-## 📌 Estructuura del proyecto
-
-```
- El proyecto está estructurado bajo el enfoque DDD (Domain-Driven Design):
-
- order-service/
-├── src/main/java/com/example/orderservice/
-│
-│   ├── OrderServiceApplication.java
-│
-│   ├── domain/
-│   │   └── order/
-│   │       ├── model/
-│   │       ├── repository/
-│   │       ├── service/
-│   │       └── exception/
-│
-│   ├── application/
-│   │   └── order/
-│   │       ├── exception/
-│   │       ├── command/
-│   │       └── usecase/
-│   │       └── response/
-│
-│   ├── infrastructure/
-│   │   ├── persistence/
-│   │   │   ├── entity/
-│   │   │   ├── repository/
-│   │   │   └── mapper/
-│   │   └── exception/
-│
-│   ├── interfaces/
-│   │   └── rest/
-│   │       ├── dto/
-│   │       ├── mapper/
-│   │       └── exception/
-│
-│   └── config/
-│
-├── src/main/resources/
-│   └── application.yml
-│
-└── pom.xml
-
-```
+API REST de gestión de órdenes construida con **Domain-Driven Design (DDD)**, Spring Boot 3 y PostgreSQL.
 
 ---
 
-### 🔹 Capas
+## Stack técnico
 
-
-* **Interfaces**: expone endpoints REST (Controllers, DTOs)
-
-* **Application**: orquesta casos de uso
-
-* **Domain**: lógica de negocio pura
-
-* **Infrastructure**: acceso a base de datos
-
-
-
----
-
-
-
-## 🔄 Flujo (DDD)
-
-
-El flujo de una petición sigue esta secuencia:
-
-```
-
-Controller → Mapper → Command → UseCase → Domain → Repository → DB
-
-                                    ↓
-
-                              Response → DTO → Controller
-
-```
+| Tecnología | Versión | Rol |
+|---|---|---|
+| Java | 17 | Lenguaje |
+| Spring Boot | 3.2.5 | Framework principal |
+| Spring Data JPA | — | Persistencia |
+| PostgreSQL | 16 | Base de datos |
+| Lombok | 1.18 | Reducción de boilerplate |
+| Springdoc OpenAPI | 2.5 | Documentación Swagger |
+| Docker / Compose | — | Containerización |
 
 ---
 
-
-## 📡 Endpoints
-
-
-### ➕ Crear Orden
-
-
-
-**POST** `/orders`
-
-
-
-#### Request
-
-
-
-```json
-
-{
-
-  "customerId": 1,
-
-  "items": [
-
-    {
-
-      "productId": 10,
-
-      "quantity": 2,
-
-      "price": 100
-
-    }
-
-  ]
-
-}
+## Arquitectura — DDD en 4 capas
 
 ```
-
-
-
-#### Response
-
-
-
-```json
-
-{
-
-  "orderId": 1,
-
-  "status": "CREATED",
-
-  "total": 1921.60
-
-}
-
+src/
+└── com.example.orderservice/
+    ├── domain/           ← Núcleo: entidades, value objects, reglas de negocio
+    │   └── order/
+    │       ├── model/    ← Order (Aggregate Root), OrderItem, OrderStatus
+    │       ├── repository/ ← Interfaz del repositorio (contrato)
+    │       ├── service/  ← OrderDomainService
+    │       └── exception/
+    │
+    ├── application/      ← Casos de uso: orquesta el dominio
+    │   └── order/
+    │       ├── usecase/  ← CreateOrderUseCase, UpdateOrderUseCase, ...
+    │       ├── command/  ← Objetos de entrada (inmutables: records)
+    │       └── response/ ← Objetos de salida
+    │
+    ├── infrastructure/   ← Adaptadores: JPA, mappers, implementación del repo
+    │   └── persistence/
+    │       ├── entity/   ← OrderEntity, OrderItemEntity (@Entity JPA)
+    │       ├── mapper/   ← Domain ↔ Entity
+    │       └── repository/ ← OrderRepositoryImpl, JpaOrderRepository
+    │
+    └── interfaces/       ← Entrada HTTP: controllers, DTOs, mappers REST
+        └── rest/
+            ├── OrderController.java
+            ├── dto/
+            ├── mapper/
+            └── exception/
 ```
+
+### Por qué esta separación importa
+
+- **`domain`** no depende de ninguna otra capa. No importa Spring, no importa JPA.
+- **`application`** depende solo del dominio. Llama al repositorio por su interfaz.
+- **`infrastructure`** implementa las interfaces del dominio. Conoce JPA, Postgres, etc.
+- **`interfaces`** traduce HTTP → comando de aplicación → respuesta HTTP.
 
 ---
 
+## Levantar con Docker (recomendado)
 
-### 📋 Obtener todas las órdenes
+### Prerrequisitos
+- Docker Desktop instalado y corriendo
 
-
-**GET** `/orders`
-
-#### Response
-
-
-```json
-
-{
-    "orders": [
-        {
-            "customerId": 1,
-            "orderId": 56,
-            "status": "PENDING",
-            "items": [
-                {
-                    "productId": 10,
-                    "quantity": 10,
-                    "price": 10.60
-                },
-                {
-                    "productId": 5,
-                    "quantity": 90,
-                    "price": 12.40
-                }
-                
-            ]
-        }
-    ]
-}
-
-```
-
----
-
-
-### 🔍 Obtener orden por ID
-
-
-**GET** `/orders/{id}`
-
-
-#### Path Param
-
-
-* `id`: ID de la orden
-
-
-#### Response
-
-
-
-```json
-
-{
-    "customerId": 1,
-    "orderId": 52,
-    "status": "CONFIRMED",
-    "items": [
-        {
-            "productId": 10,
-            "quantity": 76,
-            "price": 10.60
-        },
-        {
-            "productId": 5,
-            "quantity": 90,
-            "price": 12.40
-        }
-    ]
-}
-
-```
-
----
-
-
-### ✏️ Actualizar Orden
-
-
-**PUT** `/orders/{id}`
-
-
-#### Request
-
-
-```json
-
-{
-
-  "items": [
-
-    {
-
-      "productId": 20,
-
-      "quantity": 3,
-
-      "price": 200
-
-    }
-
-  ]
-
-}
-
-```
-
-#### Response
-
-
-```json
-{
-    "orderId": 52,
-    "status": "PENDDING",
-    "updateDate": "2026-06-08T21:54:18.316377"
-}
-
-```
-
----
-
-##  Principios aplicados
-
-* Separación de responsabilidades
-
-* Dominio desacoplado de infraestructura
-
-* Uso de DTOs para entrada/salida
-
-* Casos de uso explícitos (UseCases)
-
-* Mappers entre capas
-
-
----
-
-## 📚 Documentación API
-
-
-Swagger UI disponible en:
-
-```
-
-http://localhost:8080/swagger-ui.html
-
-```
-
-OpenAPI JSON:
-
-```
-
-http://localhost:8080/v3/api-docs
-
-```
-
----
-
-
-## 🚀 Tecnologías
-
-
-
-* Java 17
-
-* Spring Boot
-
-* Spring Data JPA
-
-* PostgreSQL
-
-* Lombok
-
-* OpenAPI / Swagger
-
----
-
-
-
-## 🧪 Ejecución
-
+### Pasos
 
 ```bash
+# 1. Compilar el JAR
+mvn clean package -DskipTests
 
-mvn clean install
+# 2. Construir la imagen Docker
+docker build -t order-service:latest .
 
-mvn spring-boot:run
+# 3. Levantar app + PostgreSQL
+docker compose up -d
 
+# 4. Ver logs
+docker compose logs -f order-service
 ```
 
+La API queda disponible en: `http://localhost:8080`  
+Swagger UI en: `http://localhost:8080/swagger-ui.html`
+
+### Comandos útiles
+
+```bash
+docker compose down          # Detener contenedores
+docker compose down -v       # Detener y borrar datos de BD
+docker compose ps            # Ver estado de los servicios
+```
 
 ---
+
+## Levantar en local (sin Docker)
+
+Necesitas PostgreSQL corriendo localmente. Luego:
+
+```bash
+# Configura las variables de entorno (o edita application.yml para desarrollo)
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=orders_db
+export DB_USERNAME=-
+export DB_PASSWORD=-
+
+mvn spring-boot:run
+```
+
+---
+
+## Endpoints
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/orders` | Crear una nueva orden |
+| `GET` | `/orders` | Listar todas las órdenes |
+| `GET` | `/orders/{id}` | Obtener orden por ID |
+| `PUT` | `/orders/{id}` | Actualizar estado de una orden |
+
+### Ejemplo — Crear orden
+
+```json
+POST /orders
+{
+  "customerId": 1,
+  "items": [
+    { "productId": 10, "quantity": 2, "price": 99.99 },
+    { "productId": 11, "quantity": 1, "price": 49.50 }
+  ]
+}
+```
+
+### Ejemplo — Actualizar estado
+
+```json
+PUT /orders/1
+{
+  "status": "CONFIRMED"
+}
+```
+
+**Estados válidos y transiciones:**
+
+```
+CREATED → CONFIRMED | PENDING | CANCELED
+PENDING → CONFIRMED | CANCELED
+CONFIRMED → (estado terminal)
+CANCELED  → (estado terminal)
+```
+
+---
+
+## Estados de la orden
+
+| Estado | Descripción |
+|---|---|
+| `CREATED` | Orden recién creada |
+| `CONFIRMED` | Orden confirmada (estado final) |
+| `PENDING` | En espera de acción |
+| `CANCELED` | Cancelada (estado final) |
+
+---
+
+## Variables de entorno
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `DB_HOST` | `localhost` | Host de PostgreSQL |
+| `DB_PORT` | `5432` | Puerto de PostgreSQL |
+| `DB_NAME` | `orders_db` | Nombre de la base de datos |
+| `DB_USERNAME` | `-` | Usuario |
+| `DB_PASSWORD` | `-` | Contraseña |
+| `SERVER_PORT` | `8080` | Puerto del servidor |
+| `JPA_DDL_AUTO` | `update` | Estrategia de DDL de Hibernate |
+
+---
+
+## Próximos pasos
+
+- [ ] Validación con `@Valid` en los DTOs de request
+- [ ] Paginación en `GET /orders`
+- [ ] Tests unitarios del dominio (Order, OrderStatus)
+- [ ] Tests de integración con Testcontainers
+- [ ] Spring Security + JWT
+- [ ] Eventos de dominio con Spring Events o Kafka
