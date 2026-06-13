@@ -14,6 +14,7 @@ public class GetOrderMapperResponse {
         return new GetOrderResponseDto(
             getOrderResponse.orderId(),
             getOrderResponse.customerId(),
+            getOrderResponse.status(),
             getOrderResponse.items().stream()
                 .map(i -> new OrderItemDto(
                     i.productId(),

@@ -8,5 +8,6 @@ import lombok.Data;
 public class OrderDto {
     public Long orderId;
     public Long customerId;
+    public String status;
     public List<OrderItemDto>  items;
 }

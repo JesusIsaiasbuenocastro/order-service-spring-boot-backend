@@ -29,6 +29,7 @@ public class GetOrdersMapperResponse {
         OrderDto dto = new OrderDto();
         dto.setOrderId(command.orderId());
         dto.setCustomerId(command.customerId());
+        dto.setStatus(command.status());
         dto.setItems(toItemDtos(command.items())); 
 
         return dto;

@@ -30,6 +30,7 @@ public class GetOrderByIdUseCase {
         return GetOrderResponse.builder()
             .orderId(order.get().getId())
             .customerId(order.get().getCustomerId())
+            .status(order.get().getStatus().name())
             .items(
                 order.get().getItems().stream()
                     .map(i -> new OrderItemCommand(

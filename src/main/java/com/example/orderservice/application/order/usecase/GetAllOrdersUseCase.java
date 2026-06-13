@@ -39,6 +39,7 @@ public class GetAllOrdersUseCase {
         return OrderCommand.builder()
             .orderId(order.getId())
             .customerId(order.getCustomerId())
+            .status(order.getStatus().name())
             .items(toItemCommands(order.getItems())).build();
     }
 

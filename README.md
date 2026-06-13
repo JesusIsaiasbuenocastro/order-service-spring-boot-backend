@@ -253,6 +253,8 @@ Controller → Mapper → Command → UseCase → Domain → Repository → DB
     "orders": [
         {
             "customerId": 1,
+            "orderId": 56,
+            "status": "PENDING",
             "items": [
                 {
                     "productId": 10,
@@ -265,8 +267,7 @@ Controller → Mapper → Command → UseCase → Domain → Repository → DB
                     "price": 12.40
                 }
                 
-            ],
-            "orderId": 50
+            ]
         }
     ]
 }
@@ -297,6 +298,7 @@ Controller → Mapper → Command → UseCase → Domain → Repository → DB
 {
     "customerId": 1,
     "orderId": 52,
+    "status": "CONFIRMED",
     "items": [
         {
             "productId": 10,
